@@ -1,9 +1,12 @@
+# You MUST fill this out in order for pericles.py to run
+
 GCAL_USERNAME="somebody@example.com"
 GCAL_PASSWORD="password"
 GCAL_ID="default"
 
 MC_API_KEY="api-key-here"
 MC_LIST_ID="list-id-here"
+MC_LIST_NAME="list-name-here"
 MC_EMAIL="somebody@example.com"
 MC_FROM_NAME="Joe Somebody"
 MC_TO_NAME="Joe's ListServ"
