@@ -73,7 +73,25 @@ def get_events():
                 "/private/full"
 
     start_date = datetime.today()
-    end_date = start_date + timedelta(days=10)
+    end_date = start_date + timedelta(days=14)
+
+    query = CalendarEventQuery()
+    query.start_min = start_date.strftime('%Y-%m-%d')
+    query.start_max = end_date.strftime('%Y-%m-%d')
+
+    return client.GetCalendarEventFeed(uri=uri, q=query)
+
+def get_events2():
+    client = CalendarClient(source='adicu-pericles-v1')
+    client.ClientLogin(settings.GCAL_USERNAME, 
+                       settings.GCAL_PASSWORD, 
+                       client.source)
+
+    uri = "https://www.google.com/calendar/feeds/" + settings.GCAL_ID2 + \
+                "/private/full"
+
+    start_date = datetime.today()
+    end_date = start_date + timedelta(days=14)
 
     query = CalendarEventQuery()
     query.start_min = start_date.strftime('%Y-%m-%d')
@@ -83,12 +101,20 @@ def get_events():
 
 def gen_blurb(html=True):
     if html:
-        return u'<h3>Hey ADI</h3></br><p>Have a good week</p>'
+        return u'<h2>Hey ADI,</h2></br><p>Have a good week</p></br><h3>This week in ADI...</h3>'
     else:
-        return u'Hey ADI\n Have a good week'
+        return u'Hey ADI,\n Have a good week'
 
 def gen_email_text():
     feed = get_events()
+    text = u'\n\n'.join([event_text(event, False) 
+                        for event in reversed(feed.entry)])
+    html = u'\n\n'.join([event_text(event, True) 
+                        for event in reversed(feed.entry)])
+    return gen_blurb(True)+ html, gen_blurb(False) + text
+
+def gen_email_text2():
+    feed = get_events2()
     text = u'\n\n'.join([event_text(event, False) 
                         for event in reversed(feed.entry)])
     html = u'\n\n'.join([event_text(event, True) 
@@ -99,6 +125,22 @@ def create_campaign(html, text):
     mc = MailSnake(settings.MC_API_KEY)
     options = {
         "subject" : datetime.today().strftime(settings.SUBJECT_TEMPLATE),
+        "from_email" : settings.MC_EMAIL,
+        "from_name" : settings.MC_FROM_NAME,
+        "to_name" : settings.MC_TO_NAME,
+        "template_id" : find_template(settings.MC_TEMPLATE_NAME),
+        "list_id" : find_list(settings.MC_LIST_NAME)
+    }
+    section_name = 'html_' + settings.MC_TEMPLATE_SECTION
+    content = {section_name: html, "text": text}
+    cid = mc.campaignCreate(type='regular', content=content, options=options)
+
+    return cid
+
+def create_campaign2(html, text):
+    mc = MailSnake(settings.MC_API_KEY)
+    options = {
+        "subject" : datetime.today().strftime(settings.SUBJECT_TEMPLATE2),
         "from_email" : settings.MC_EMAIL,
         "from_name" : settings.MC_FROM_NAME,
         "to_name" : settings.MC_TO_NAME,
@@ -130,4 +172,7 @@ def campaign_info(cid):
 if __name__ == '__main__':
     cid = create_campaign(*gen_email_text())
     title, url = campaign_info(cid)
+    cid2 = create_campaign2(*gen_email_text2())
+    title2, url2 = campaign_info(cid2)
     print "Created new campaign %s. Edit it at %s." % (title, url)
+    print "Created new campaign %s. Edit it at %s." % (title2, url2)
